@@ -3,12 +3,20 @@ import { Kafka, logLevel } from 'kafkajs';
 import { KafkaTopics } from '../../../domain/events/events';
 
 export class WalletService {
-  private readonly blockcypherApiUrl = 'https://api.blockcypher.com/v1';
-  private readonly blockcypherToken = process.env.BLOCKCYPHER_TOKEN;
+  private readonly blockcypherApiUrl: string;
+  private readonly blockcypherToken?: string;
   private readonly producer;
   private taskConsumer;
   
-  constructor(private readonly kafkaBroker: string) {
+  constructor(
+    private readonly kafkaBroker: string,
+    blockcypherApiUrl: string,
+    blockcypherToken?: string,
+    consumerGroupId?: string
+  ) {
+    this.blockcypherApiUrl = blockcypherApiUrl;
+    this.blockcypherToken = blockcypherToken;
+    
     const kafka = new Kafka({
       brokers: [this.kafkaBroker],
       logLevel: logLevel.ERROR
@@ -16,7 +24,7 @@ export class WalletService {
     
     this.producer = kafka.producer();
     this.taskConsumer = kafka.consumer({ 
-      groupId: 'balance-crawler',
+      groupId: consumerGroupId || 'balance-crawler',
       retry: { retries: 0 } 
     });
   }
@@ -61,13 +69,17 @@ export class WalletService {
           }
           
           const errorMessage = this.extractErrorMessage(error);
+          const isRateLimit = this.isRateLimitError(error);
+          const isNotFound = error?.response?.status === 404;
+          
           console.error(`Error processing wallet balance for ${address}:`, errorMessage);
           
           // Enviar error al cliente a través de un topic de errores
           const errorPayload = JSON.stringify({ 
             address, 
             error: errorMessage,
-            isNotFound: error?.response?.status === 404 
+            isNotFound,
+            isRateLimit
           });
           await this.producer.send({
             topic: KafkaTopics.WalletBalanceError,
@@ -103,13 +115,39 @@ export class WalletService {
   }
 
   private extractErrorMessage(error: any): string {
-    if (error.response?.data?.error) {
-      return error.response.data.error;
+    // Detectar rate limit (429) o límites alcanzados
+    if (error.response?.status === 429) {
+      return 'Rate limit exceeded. Please wait before trying again.';
     }
+    
+    if (error.response?.data?.error) {
+      const errorMsg = error.response.data.error;
+      // Detectar mensajes de límites alcanzados
+      if (errorMsg.toLowerCase().includes('limit') || errorMsg.toLowerCase().includes('rate')) {
+        return 'API rate limit reached. Please wait or upgrade your BlockCypher token.';
+      }
+      return errorMsg;
+    }
+    
     if (error.message) {
+      // Detectar mensajes de límites en el error message
+      if (error.message.toLowerCase().includes('limit') || error.message.toLowerCase().includes('rate')) {
+        return 'API rate limit reached. Please wait or upgrade your BlockCypher token.';
+      }
       return error.message;
     }
+    
     return 'Unknown error occurred';
+  }
+  
+  private isRateLimitError(error: any): boolean {
+    return (
+      error.response?.status === 429 ||
+      error.response?.data?.error?.toLowerCase().includes('limit') ||
+      error.response?.data?.error?.toLowerCase().includes('rate') ||
+      error.message?.toLowerCase().includes('limit') ||
+      error.message?.toLowerCase().includes('rate')
+    );
   }
 }
 

@@ -20,10 +20,19 @@ export class WalletController {
 
   private readonly walletService: WalletService
 
-  constructor(private readonly kafka: Kafka) {
-    // Usar el broker de la configuración de Kafka
-    const kafkaBroker = 'localhost:9092'; // Valor por defecto
-    this.walletService = new WalletService(kafkaBroker)
+  constructor(
+    private readonly kafka: Kafka,
+    kafkaBroker: string,
+    blockcypherApiUrl: string,
+    blockcypherToken?: string,
+    consumerGroupId?: string
+  ) {
+    this.walletService = new WalletService(
+      kafkaBroker,
+      blockcypherApiUrl,
+      blockcypherToken,
+      consumerGroupId
+    )
     this.priceConsumerGroupId = `server-price-${Date.now()}`
     this.balanceConsumerGroupId = `server-balance-${Date.now()}`
     this.errorConsumerGroupId = `server-error-${Date.now()}`
@@ -102,8 +111,8 @@ export class WalletController {
 
     await this.errorConsumer.run({
       eachMessage: async ({ message }) => {
-        const { address, error, isNotFound } = JSON.parse(message.value!.toString())
-        this.notifyClientsAboutError(address, error, isNotFound)
+        const { address, error, isNotFound, isRateLimit } = JSON.parse(message.value!.toString())
+        this.notifyClientsAboutError(address, error, isNotFound, isRateLimit)
       },
     })
   }
@@ -156,12 +165,13 @@ export class WalletController {
     })
   }
 
-  private notifyClientsAboutError(address: string, error: string, isNotFound: boolean): void {
+  private notifyClientsAboutError(address: string, error: string, isNotFound: boolean, isRateLimit?: boolean): void {
     this.clientWallets.forEach((wallet, clientId) => {
       if (wallet.address === address) {
         this.notifyClient(clientId, WebSocketEvents.Error, { 
           error, 
           isNotFound,
+          isRateLimit,
           address 
         })
       }

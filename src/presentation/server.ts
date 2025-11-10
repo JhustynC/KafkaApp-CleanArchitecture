@@ -2,24 +2,47 @@
 import { WebSocketServer } from 'ws'
 import { Kafka, logLevel } from 'kafkajs'
 import { v4 as uuidv4 } from 'uuid'
-import { KafkaTopics } from '../domain/events/events';
 import { WalletController } from './wallet/wallet-controller'
 import { PriceService } from './services/price/price.service'
+
+
+
+interface ServerConfig {
+  kafkaBroker: string
+  port: number
+  blockcypherApiUrl: string
+  blockcypherToken?: string
+  consumerGroupId?: string
+}
+
 
 export class Server {
   private readonly kafka: Kafka
   private readonly wss: WebSocketServer
   private walletController: WalletController
   private priceService: PriceService
+  private readonly port: number
 
-  constructor(private readonly kafkaBroker: string, private readonly port: number = 3000) {
+  constructor(
+    options: ServerConfig
+  ) {
+
+    const {
+      kafkaBroker,port,blockcypherApiUrl,blockcypherToken,consumerGroupId} = options;
+
     if (!kafkaBroker) {
       throw new Error('KAFKA_BROKER environment variable is required')
     }
-
+    this.port = port;
     this.kafka = new Kafka({ brokers: [kafkaBroker], logLevel: logLevel.ERROR })
     this.wss = new WebSocketServer({ port: this.port })
-    this.walletController = new WalletController(this.kafka)
+    this.walletController = new WalletController(
+      this.kafka,
+      kafkaBroker,
+      blockcypherApiUrl,
+      blockcypherToken,
+      consumerGroupId
+    )
     this.priceService = new PriceService(kafkaBroker)
   }
 
