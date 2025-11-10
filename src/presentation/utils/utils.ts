@@ -1,6 +1,6 @@
 import WebSocket from 'ws'
 import readline from 'readline'
-import {WebSocketEvents} from './events'
+import {WebSocketEvents} from '../../domain/events/events'
 
 export function setupKeyListener(handlers: {onEnter: () => void; onClose: () => void}) {
   readline.emitKeypressEvents(process.stdin)
@@ -44,3 +44,4 @@ export function printBalance(currency: string, price?: number, balance?: number)
 export function getCurrencyFromAddress(address: string) {
   return address.startsWith('0x') ? 'eth' : 'btc'
 }
+

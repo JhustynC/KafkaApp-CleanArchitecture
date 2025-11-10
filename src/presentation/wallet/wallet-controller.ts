@@ -1,16 +1,18 @@
 // wallet-controller.ts
 import { WebSocket } from 'ws'
 import { Kafka, Consumer, Producer } from 'kafkajs'
-import { getCurrencyFromAddress, sendSocketMessage } from '../../utils'
-import { KafkaTopics, WebSocketEvents } from "../../events"
-import { WalletService } from '../../services/wallet/wallet.service'
+import { getCurrencyFromAddress, sendSocketMessage } from '../utils/utils'
+import { KafkaTopics, WebSocketEvents } from "../../domain/events/events"
+import { WalletService } from '../services/wallet/wallet.service'
 
 export class WalletController {
   private readonly producer: Producer
   private readonly priceConsumer: Consumer
   private readonly balanceConsumer: Consumer
+  private readonly errorConsumer: Consumer
   private readonly priceConsumerGroupId: string
   private readonly balanceConsumerGroupId: string
+  private readonly errorConsumerGroupId: string
   private readonly clients = new Map<string, WebSocket>()
   private readonly clientWallets = new Map<string, { address: string; currency: string }>()
   private readonly walletBalances = new Map<string, number>()
@@ -24,11 +26,13 @@ export class WalletController {
     this.walletService = new WalletService(kafkaBroker)
     this.priceConsumerGroupId = `server-price-${Date.now()}`
     this.balanceConsumerGroupId = `server-balance-${Date.now()}`
+    this.errorConsumerGroupId = `server-error-${Date.now()}`
 
     this.producer = kafka.producer();
     
     this.priceConsumer = this.kafka.consumer({ groupId: this.priceConsumerGroupId })
     this.balanceConsumer = this.kafka.consumer({ groupId: this.balanceConsumerGroupId })
+    this.errorConsumer = this.kafka.consumer({ groupId: this.errorConsumerGroupId })
   }
 
   public async initialize(): Promise<void> {
@@ -62,16 +66,19 @@ export class WalletController {
   public async cleanup(): Promise<void> {
     await this.priceConsumer.disconnect()
     await this.balanceConsumer.disconnect()
-    await this.kafka.admin().deleteGroups([this.priceConsumerGroupId, this.balanceConsumerGroupId])
+    await this.errorConsumer.disconnect()
+    await this.kafka.admin().deleteGroups([this.priceConsumerGroupId, this.balanceConsumerGroupId, this.errorConsumerGroupId])
     await this.producer.disconnect()
   }
 
   private async connectKafka(): Promise<void> {
     await this.priceConsumer.connect()
     await this.balanceConsumer.connect()
+    await this.errorConsumer.connect()
     await this.producer.connect()
     await this.priceConsumer.subscribe({ topic: KafkaTopics.CurrencyPrice, fromBeginning: false })
     await this.balanceConsumer.subscribe({ topic: KafkaTopics.WalletBalance, fromBeginning: false })
+    await this.errorConsumer.subscribe({ topic: KafkaTopics.WalletBalanceError, fromBeginning: false })
   }
 
   private async setupConsumers(): Promise<void> {
@@ -90,6 +97,13 @@ export class WalletController {
         const address = message.key!.toString()
         this.walletBalances.set(address, balance)
         this.notifyClientsAboutBalanceUpdate(address, balance)
+      },
+    })
+
+    await this.errorConsumer.run({
+      eachMessage: async ({ message }) => {
+        const { address, error, isNotFound } = JSON.parse(message.value!.toString())
+        this.notifyClientsAboutError(address, error, isNotFound)
       },
     })
   }
@@ -138,6 +152,18 @@ export class WalletController {
     this.clientWallets.forEach((wallet, clientId) => {
       if (wallet.address === address) {
         this.notifyClient(clientId, WebSocketEvents.BalanceUpdated, { balance })
+      }
+    })
+  }
+
+  private notifyClientsAboutError(address: string, error: string, isNotFound: boolean): void {
+    this.clientWallets.forEach((wallet, clientId) => {
+      if (wallet.address === address) {
+        this.notifyClient(clientId, WebSocketEvents.Error, { 
+          error, 
+          isNotFound,
+          address 
+        })
       }
     })
   }

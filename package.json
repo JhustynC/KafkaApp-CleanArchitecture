@@ -3,7 +3,7 @@
   "scripts": {
     "dev": "tsx watch ./src/app.ts",
     "start": "tsx ./src/app.ts",
-    "cli": "tsx ./src/cli.ts",
+    "cli": "tsx ./src/presentation/cli/cli.ts",
     "build": "tsc"
   },
   "dependencies": {

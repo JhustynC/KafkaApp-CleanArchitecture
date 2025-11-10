@@ -24,3 +24,4 @@ declare module '@binance/connector' {
     close(): void;
   }
 }
+

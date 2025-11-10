@@ -2,9 +2,9 @@
 import { WebSocketServer } from 'ws'
 import { Kafka, logLevel } from 'kafkajs'
 import { v4 as uuidv4 } from 'uuid'
-import { KafkaTopics } from './../events';
+import { KafkaTopics } from '../domain/events/events';
 import { WalletController } from './wallet/wallet-controller'
-import { PriceService } from '../services/price/price.service'
+import { PriceService } from './services/price/price.service'
 
 export class Server {
   private readonly kafka: Kafka
@@ -59,3 +59,4 @@ export class Server {
     })
   }
 }
+

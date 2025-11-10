@@ -1,5 +1,5 @@
 import { Kafka, logLevel } from 'kafkajs';
-import { KafkaTopics } from '../../events';
+import { KafkaTopics } from '../../../domain/events/events';
 import { Spot } from '@binance/connector';
 
 export class PriceService {
@@ -51,3 +51,4 @@ export class PriceService {
 }
 
 export default PriceService;
+

@@ -1,12 +1,12 @@
 import WebSocket from 'ws'
-import {WebSocketEvents} from './events'
+import {WebSocketEvents} from '../../domain/events/events'
 import {
   getCurrencyFromAddress,
   loadWalletBalanceLoop,
   printBalance,
   sendSocketMessage,
   setupKeyListener,
-} from './utils'
+} from '../utils/utils'
 
 const ws = new WebSocket('ws://localhost:3000')
 const address = process.argv[2]
@@ -46,7 +46,19 @@ ws.on('message', (json: string) => {
       printBalance(currency, price, balance)
       break
     }
+
+    case WebSocketEvents.Error: {
+      process.stdout.write('\n')
+      process.stdout.write(`❌ Error: ${data.error}\n`)
+      if (data.isNotFound) {
+        process.stdout.write(`   The wallet address "${data.address}" was not found.\n`)
+        process.stdout.write(`   Please verify the address and try again.\n`)
+      }
+      process.stdout.write('\n')
+      break
+    }
   }
 })
 
 ws.on('close', () => shutdown())
+

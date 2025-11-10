@@ -1,4 +1,4 @@
-import { envs } from "./config/envs.adapter"
+import { envs } from "./config/adapters/envs.adapter"
 import { Server } from "./presentation/server"
 
 
