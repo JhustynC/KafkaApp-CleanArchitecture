@@ -1,0 +1,22 @@
+version: '3'
+services:
+  redpanda:
+    image: redpandadata/redpanda:v22.2.2
+    container_name: wallet_watcher_broker
+    command:
+      - redpanda start
+      - --kafka-addr PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+    ports:
+      - "29092:29092"
+      - "9092:9092"  # Expose Kafka protocol port
+
+  console:
+    container_name: wallet_watcher_console
+    image: redpandadata/console:latest
+    environment:
+      KAFKA_BROKERS: redpanda:29092
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redpanda
