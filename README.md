@@ -192,3 +192,7 @@ docker-compose -f docker-compose.yaml rm -s -f -v
 2. The **Wallet Service** consumes balance requests from Kafka and fetches data from BlockCypher API
 3. The **WebSocket Server** manages client connections and coordinates between services
 4. The **CLI Client** connects via WebSocket and receives real-time updates about wallet balances and prices
+
+## Get Token
+
+Go to: https://accounts.blockcypher.com/tokens and get a API token
