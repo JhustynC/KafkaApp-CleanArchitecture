@@ -5,8 +5,6 @@ import { v4 as uuidv4 } from 'uuid'
 import { WalletController } from './wallet/wallet-controller'
 import { PriceService } from './services/price/price.service'
 
-
-
 interface ServerConfig {
   kafkaBroker: string
   port: number
@@ -14,7 +12,6 @@ interface ServerConfig {
   blockcypherToken?: string
   consumerGroupId?: string
 }
-
 
 export class Server {
   private readonly kafka: Kafka
