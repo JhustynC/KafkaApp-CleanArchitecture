@@ -1,5 +1,6 @@
 import "dotenv/config";
-import { get } from "env-var";
+import envVar from "env-var";
+const { get } = envVar;
 
 export const envs = {
     KAFKA_BROKER: get('KAFKA_BROKER').default('localhost:9092').asString(),

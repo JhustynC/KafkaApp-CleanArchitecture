@@ -1,6 +1,6 @@
 import WebSocket from 'ws'
 import readline from 'readline'
-import {WebSocketEvents} from '../../domain/events/events'
+import {WebSocketEvents} from '../../domain/events/events.js'
 
 export function setupKeyListener(handlers: {onEnter: () => void; onClose: () => void}) {
   readline.emitKeypressEvents(process.stdin)

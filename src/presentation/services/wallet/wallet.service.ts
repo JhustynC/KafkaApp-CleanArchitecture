@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { Kafka, logLevel } from 'kafkajs';
-import { KafkaTopics } from '../../../domain/events/events';
+import { KafkaTopics } from '../../../domain/events/events.js';
 
 export class WalletService {
   private readonly blockcypherApiUrl: string;

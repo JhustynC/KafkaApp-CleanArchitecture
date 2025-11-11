@@ -1,13 +1,13 @@
 import WebSocket from 'ws'
-import { envs } from '../../config/adapters/envs.adapter'
-import {WebSocketEvents} from '../../domain/events/events'
+import { envs } from '../../config/adapters/envs.adapter.js'
+import {WebSocketEvents} from '../../domain/events/events.js'
 import {
   getCurrencyFromAddress,
   loadWalletBalanceLoop,
   printBalance,
   sendSocketMessage,
   setupKeyListener,
-} from '../utils/utils'
+} from '../utils/utils.js'
 
 const ws = new WebSocket(envs.WEBSOCKET_URL)
 const address = process.argv[2]

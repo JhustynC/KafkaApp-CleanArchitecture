@@ -1,9 +1,9 @@
 // wallet-controller.ts
 import { WebSocket } from 'ws'
 import { Kafka, Consumer, Producer } from 'kafkajs'
-import { getCurrencyFromAddress, sendSocketMessage } from '../utils/utils'
-import { KafkaTopics, WebSocketEvents } from "../../domain/events/events"
-import { WalletService } from '../services/wallet/wallet.service'
+import { getCurrencyFromAddress, sendSocketMessage } from '../utils/utils.js'
+import { KafkaTopics, WebSocketEvents } from "../../domain/events/events.js"
+import { WalletService } from '../services/wallet/wallet.service.js'
 
 export class WalletController {
   private readonly producer: Producer

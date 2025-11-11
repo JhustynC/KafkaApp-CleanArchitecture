@@ -1,5 +1,5 @@
 import { Kafka, logLevel } from 'kafkajs';
-import { KafkaTopics } from '../../../domain/events/events';
+import { KafkaTopics } from '../../../domain/events/events.js';
 import { Spot } from '@binance/connector';
 
 export class PriceService {
